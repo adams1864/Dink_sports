@@ -1,0 +1,148 @@
+/* stylelint-disable */
+@import "tailwindcss";
+@import "../styles/theme.css";
+@import "@mantine/core/styles.css";
+@import "@mantine/notifications/styles.css";
+@import "@mantine/carousel/styles.css";
+@import "@mantine/dates/styles.css";
+@import "@mantine/dropzone/styles.css";
+@import "../styles/progress.css";
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 1s ease-out forwards;
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    #d6001c 0%,
+    #ff4d6d 25%,
+    #d6001c 50%,
+    #ff4d6d 75%,
+    #d6001c 100%
+  );
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 3s linear infinite;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes progress {
+  from { width: 0%; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.3s ease-out forwards;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-20px); }
+}
+
+@keyframes scaleIn {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 1s ease-out forwards;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+
+/* Custom style to replicate the exact border and curve from the image */
+.curved-frame {
+    border-top-right-radius: 65% 100%; /* Wider curve top */
+    border-bottom-right-radius: 40% 15%; /* Tighter curve bottom */
+    border-style: solid;
+    border-width: 3px;
+    border-color: #D92323; /* RED_COLOR */
+    border-left: none; /* No border on the straight edge */
+    border-top: none; 
+    border-bottom: none;
+}
+
+@keyframes pulse-once {
+  0% { opacity: 0; transform: translateY(10px); }
+  50% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.animate-pulse-once {
+  animation: pulse-once 1.2s ease-out;
+}
+
+
+@keyframes pulse-once {
+  0% { opacity: 0; transform: translateY(10px); }
+  50% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.animate-pulse-once {
+  animation: pulse-once 1.2s ease-out;
+}
+
+.curved-frame {
+    border-top-right-radius: 65% 100%;
+    border-bottom-right-radius: 40% 15%;
+    border-style: solid;
+    border-width: 3px;
+    border-color: #D92323;
+    border-left: none;
+    border-top: none;
+    border-bottom: none;
+}
+
