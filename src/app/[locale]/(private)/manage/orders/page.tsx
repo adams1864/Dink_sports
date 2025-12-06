@@ -1,59 +1,53 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { getOrders, type Order } from "@/lib/api";
 import { Entity } from "./_components/Entity";
 
-// Dummy data for paid transactions
-const dummyOrders = [
-  {
-    id: "1",
-    orderId: "ORD-2024-001",
-    customerName: "Abebe Kebede",
-    email: "abebe@example.com",
-    amount: 299.99,
-    status: "paid" as const,
-    date: "2024-10-01T10:30:00Z",
-  },
-  {
-    id: "2",
-    orderId: "ORD-2024-002",
-    customerName: "Sara Mohammed",
-    email: "sara@example.com",
-    amount: 149.5,
-    status: "paid" as const,
-    date: "2024-10-02T14:15:00Z",
-  },
-  {
-    id: "3",
-    orderId: "ORD-2024-003",
-    customerName: "John Smith",
-    email: "john@example.com",
-    amount: 89.99,
-    status: "paid" as const,
-    date: "2024-10-03T09:20:00Z",
-  },
-  {
-    id: "4",
-    orderId: "ORD-2024-004",
-    customerName: "Mulu Tesfaye",
-    email: "mulu@example.com",
-    amount: 199.99,
-    status: "pending" as const,
-    date: "2024-10-04T16:45:00Z",
-  },
-  {
-    id: "5",
-    orderId: "ORD-2024-005",
-    customerName: "David Johnson",
-    email: "david@example.com",
-    amount: 450.0,
-    status: "paid" as const,
-    date: "2024-10-05T11:00:00Z",
-  },
-];
+type TableOrder = {
+  id: string;
+  orderId: string;
+  customerName: string;
+  email: string;
+  amount: number;
+  status: Order["status"];
+  date: string;
+};
+
+function mapOrderToRow(order: Order): TableOrder {
+  return {
+    id: String(order.id),
+    orderId: order.orderNumber || `ORD-${order.id}`,
+    customerName: order.customerName,
+    email: order.customerEmail,
+    amount: order.total,
+    status: order.status,
+    date: order.createdAt ?? "",
+  };
+}
 
 export default function OrdersPage() {
-  // Filter only paid transactions
-  const paidOrders = dummyOrders.filter((order) => order.status === "paid");
+  const [rows, setRows] = useState<TableOrder[]>([]);
 
-  return <Entity data={paidOrders} total={paidOrders.length} />;
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const data = await getOrders();
+        if (cancelled) return;
+        setRows(data.map(mapOrderToRow));
+      } catch (error) {
+        console.error("Failed to load orders", error);
+        if (!cancelled) setRows([]);
+      }
+    }
+
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return <Entity data={rows} total={rows.length} />;
 }

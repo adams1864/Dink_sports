@@ -23,7 +23,7 @@ type Order = {
   customerName: string;
   email: string;
   amount: number;
-  status: "paid" | "pending" | "failed" | "refunded";
+  status: string;
   date: string;
 };
 
@@ -105,23 +105,15 @@ export function Entity({ data = [], total }: EntityProps) {
                   <Badge
                     variant="light"
                     color={(() => {
-                      if (element.status === "paid") {
-                        return "green";
-                      }
-                      if (element.status === "pending") {
-                        return "yellow";
-                      }
-                      if (element.status === "failed") {
-                        return "red";
-                      }
-                      if (element.status === "refunded") {
-                        return "gray";
-                      }
+                      const normalized = element.status.toLowerCase();
+                      if (normalized === "paid" || normalized === "completed") return "green";
+                      if (normalized === "pending") return "yellow";
+                      if (normalized === "failed" || normalized === "cancelled") return "red";
+                      if (normalized === "refunded") return "gray";
                       return "gray";
                     })()}
                   >
-                    {element.status.charAt(0).toUpperCase() +
-                      element.status.slice(1)}
+                    {element.status.charAt(0).toUpperCase() + element.status.slice(1)}
                   </Badge>
                 </Td>
                 <Td className="font-medium">ETB {element.amount.toFixed(2)}</Td>

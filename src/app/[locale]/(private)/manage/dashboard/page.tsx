@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, Grid, Text, Box, Group, Skeleton } from "@mantine/core";
+import { Card, Grid, Text, Box, Group, Skeleton, Table, Badge } from "@mantine/core";
 import {
   IconBrandProducthunt,
   IconPackage,
@@ -10,7 +10,7 @@ import {
   IconCurrencyDollar,
 } from "@tabler/icons-react";
 import { useEffect, useMemo, useState } from "react";
-import { getBundles, getProducts } from "@/lib/api";
+import { getMeta, getOrders, type Order } from "@/lib/api";
 
 type StatConfig = {
   key: keyof DashboardCounts;
@@ -80,6 +80,7 @@ const DEFAULT_COUNTS: DashboardCounts = {
 
 export default function DashboardPage() {
   const [counts, setCounts] = useState<DashboardCounts>(DEFAULT_COUNTS);
+  const [recentOrders, setRecentOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
   const numberFormatter = useMemo(() => new Intl.NumberFormat(), []);
@@ -87,23 +88,27 @@ export default function DashboardPage() {
   useEffect(() => {
     let cancelled = false;
 
-    async function loadCounts() {
+    async function loadData() {
       try {
         setLoading(true);
-        const [productResponse, bundleResponse] = await Promise.all([
-          getProducts({ page: 1, perPage: 1 }),
-          getBundles({ page: 1, perPage: 1 }),
+        const [summary, orders] = await Promise.all([
+          getMeta(),
+          getOrders().catch(() => [])
         ]);
 
         if (cancelled) return;
 
-        setCounts((previous) => ({
-          ...previous,
-          products: productResponse.meta.total,
-          bundles: bundleResponse.meta.total,
-        }));
+        setCounts({
+          products: summary.products,
+          bundles: summary.bundles,
+          orders: summary.orders,
+          leads: summary.leads,
+          discounts: summary.discounts,
+          revenue: summary.revenue,
+        });
+        setRecentOrders(orders.slice(0, 5));
       } catch (error) {
-        console.error("Failed to load dashboard counts", error);
+        console.error("Failed to load dashboard data", error);
       } finally {
         if (!cancelled) {
           setLoading(false);
@@ -111,7 +116,7 @@ export default function DashboardPage() {
       }
     }
 
-    void loadCounts();
+    void loadData();
 
     return () => {
       cancelled = true;
@@ -150,9 +155,13 @@ export default function DashboardPage() {
                     <Text size="sm" c="dimmed" fw={500}>
                       {stat.title}
                     </Text>
-                    <Text size="xl" fw={700} mt="xs">
-                      {loading ? <Skeleton height={20} width={60} /> : stat.value}
-                    </Text>
+                    {loading ? (
+                      <Skeleton height={20} width={60} mt="xs" />
+                    ) : (
+                      <Text size="xl" fw={700} mt="xs">
+                        {stat.value}
+                      </Text>
+                    )}
                   </Box>
                   <Box
                     style={{
@@ -173,6 +182,60 @@ export default function DashboardPage() {
           );
         })}
       </Grid>
+
+      <Text size="xl" fw={700} mt="xl" mb="lg">
+        Recent Orders
+      </Text>
+      <Card shadow="sm" padding="lg" radius="md" withBorder>
+        <Table>
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>Order #</Table.Th>
+              <Table.Th>Customer</Table.Th>
+              <Table.Th>Status</Table.Th>
+              <Table.Th>Total</Table.Th>
+              <Table.Th>Date</Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            {loading ? (
+              <Table.Tr>
+                <Table.Td colSpan={5}>
+                  <Skeleton height={20} mt={6} radius="xl" />
+                  <Skeleton height={20} mt={6} radius="xl" />
+                  <Skeleton height={20} mt={6} radius="xl" />
+                </Table.Td>
+              </Table.Tr>
+            ) : recentOrders.length === 0 ? (
+              <Table.Tr>
+                <Table.Td colSpan={5} align="center">
+                  No orders found
+                </Table.Td>
+              </Table.Tr>
+            ) : (
+              recentOrders.map((order) => (
+                <Table.Tr key={order.id}>
+                  <Table.Td>{order.orderNumber}</Table.Td>
+                  <Table.Td>{order.customerName}</Table.Td>
+                  <Table.Td>
+                    <Badge
+                      color={order.status === "completed" ? "green" : "blue"}
+                    >
+                      {order.status}
+                    </Badge>
+                  </Table.Td>
+                  <Table.Td>{order.total}</Table.Td>
+                  <Table.Td>
+                    {order.createdAt
+                      ? new Date(order.createdAt).toLocaleDateString()
+                      : "—"}
+                  </Table.Td>
+                </Table.Tr>
+              ))
+            )}
+          </Table.Tbody>
+        </Table>
+      </Card>
     </Box>
   );
 }

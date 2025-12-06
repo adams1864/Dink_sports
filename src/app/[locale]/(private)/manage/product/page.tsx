@@ -4,11 +4,11 @@ import { PAGE_SIZE } from "@/constants/pagination";
 import { Entity } from "./_components/Entity";
 
 type PageProps = {
-  searchParams?: Record<string, string | string[] | undefined>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-export default async function ProductPage({ searchParams }: PageProps) {
-  const params = searchParams ?? {};
+export default async function ProductPage(props: PageProps) {
+  const params = (await props.searchParams) ?? {};
 
   const getParam = (key: string) => {
     const value = params[key];

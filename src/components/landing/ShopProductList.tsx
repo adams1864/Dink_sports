@@ -3,13 +3,15 @@
 import { useState, useEffect } from 'react';
 import { Filter, ShoppingBag, X } from 'lucide-react';
 import { Product } from '@/lib/api';
+import { ProductBuyModal } from '@/components/ProductBuyModal';
+import { useDisclosure } from '@mantine/hooks';
 
 interface ShopProductListProps {
   initialProducts: Product[];
 }
 
 // Internal Modal Component to avoid prop drilling issues if ProductModal expects different props
-function ProductModal({ product, onClose }: { product: Product; onClose: () => void }) {
+function ProductDetailModal({ product, onClose, onBuy }: { product: Product; onClose: () => void; onBuy: () => void }) {
   if (!product) return null;
 
   return (
@@ -42,9 +44,13 @@ function ProductModal({ product, onClose }: { product: Product; onClose: () => v
               <span className="text-4xl font-black bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent">
                 ${product.price}
               </span>
-              <button className="px-8 py-4 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-xl font-bold text-lg hover:shadow-lg hover:shadow-red-500/30 transition-all transform hover:-translate-y-1 flex items-center gap-3">
+              <button 
+                onClick={onBuy}
+                disabled={product.stock <= 0}
+                className={`px-8 py-4 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-xl font-bold text-lg hover:shadow-lg hover:shadow-red-500/30 transition-all transform hover:-translate-y-1 flex items-center gap-3 ${product.stock <= 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
                 <ShoppingBag size={24} />
-                Add to Cart
+                {product.stock > 0 ? 'Buy Now' : 'Out of Stock'}
               </button>
             </div>
           </div>
@@ -56,9 +62,11 @@ function ProductModal({ product, onClose }: { product: Product; onClose: () => v
 
 export default function ShopProductList({ initialProducts }: ShopProductListProps) {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [buyProduct, setBuyProduct] = useState<Product | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [hoveredProduct, setHoveredProduct] = useState<number | null>(null);
   const [isMd, setIsMd] = useState<boolean>(false);
+  const [buyModalOpened, { open: openBuyModal, close: closeBuyModal }] = useDisclosure(false);
 
   useEffect(() => {
     const check = () => setIsMd(window.innerWidth >= 768);
@@ -66,6 +74,13 @@ export default function ShopProductList({ initialProducts }: ShopProductListProp
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
   }, []);
+
+  const handleBuyClick = (product: Product) => {
+    setBuyProduct(product);
+    openBuyModal();
+    // Close detail modal if open
+    setSelectedProduct(null);
+  };
 
   // Extract categories from products
   const categories = ['All', ...Array.from(new Set(initialProducts.map(p => p.category)))];
@@ -195,15 +210,27 @@ export default function ShopProductList({ initialProducts }: ShopProductListProp
               </div>
             )}
           </div>
-        </div>
-      </section>
+      </div>
+    </section>
 
-      {selectedProduct && (
-        <ProductModal
-          product={selectedProduct}
-          onClose={() => setSelectedProduct(null)}
-        />
-      )}
-    </div>
+    {selectedProduct && (
+      <ProductDetailModal
+        product={selectedProduct}
+        onClose={() => setSelectedProduct(null)}
+        onBuy={() => handleBuyClick(selectedProduct)}
+      />
+    )}
+
+    {buyProduct && (
+      <ProductBuyModal
+        product={buyProduct}
+        opened={buyModalOpened}
+        close={() => {
+          closeBuyModal();
+          setBuyProduct(null);
+        }}
+      />
+    )}
+  </div>
   );
 }

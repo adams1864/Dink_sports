@@ -78,6 +78,33 @@ export interface Bundle {
 	updatedAt: string | null;
 }
 
+export interface Order {
+	id: number;
+	orderNumber: string;
+	customerName: string;
+	customerEmail: string;
+	status: string;
+	totalCents: number;
+	total: number;
+	notes?: string | null;
+	createdAt: string | null;
+	updatedAt?: string | null;
+}
+
+export interface OrderQuery {
+	q?: string;
+	status?: string;
+}
+
+export interface MetaSummary {
+	products: number;
+	bundles: number;
+	orders: number;
+	leads: number;
+	discounts: number;
+	revenue: number;
+}
+
 export interface BundleQuery {
 	page?: number;
 	perPage?: number;
@@ -208,6 +235,22 @@ function mapBundle(input: Record<string, unknown>): Bundle {
 		bundleImage: toAbsoluteUrl(input.bundleImage ?? input.coverImage),
 		productIds,
 		products,
+		createdAt: typeof input.createdAt === "string" ? input.createdAt : null,
+		updatedAt: typeof input.updatedAt === "string" ? input.updatedAt : null,
+	};
+}
+
+function mapOrder(input: Record<string, unknown>): Order {
+	const totalCents = Number(input.totalCents ?? 0);
+	return {
+		id: Number(input.id ?? 0),
+		orderNumber: typeof input.orderNumber === "string" ? input.orderNumber : "",
+		customerName: typeof input.customerName === "string" ? input.customerName : "",
+		customerEmail: typeof input.customerEmail === "string" ? input.customerEmail : "",
+		status: typeof input.status === "string" ? input.status : "pending",
+		totalCents: Number.isFinite(totalCents) ? totalCents : 0,
+		total: Number.isFinite(totalCents) ? totalCents / 100 : 0,
+		notes: typeof input.notes === "string" ? input.notes : null,
 		createdAt: typeof input.createdAt === "string" ? input.createdAt : null,
 		updatedAt: typeof input.updatedAt === "string" ? input.updatedAt : null,
 	};
@@ -413,6 +456,67 @@ export async function createBundle(input: FormData | Record<string, JsonValue>):
 	}
 
 	return mapBundle(payload.bundle as Record<string, unknown>);
+}
+
+export interface CreateOrderPayload {
+  customerName: string;
+  customerEmail: string;
+  address: string;
+  items: { productId: number; quantity: number }[];
+}
+
+export async function createOrder(payload: CreateOrderPayload) {
+  return apiFetch("/orders", {
+    method: "POST",
+    body: JSON.stringify(payload),
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+}
+
+export async function getOrders(params: OrderQuery = {}): Promise<Order[]> {
+	const query = buildQuery(params as Record<string, unknown>);
+	const response = await apiFetch(`/orders${query}`);
+	const payload = await parseJson(response);
+
+	const data = Array.isArray(payload)
+		? (payload as Record<string, unknown>[]).map(mapOrder)
+		: Array.isArray((payload as Record<string, unknown>).data)
+			? ((payload as Record<string, unknown>).data as Record<string, unknown>[]).map(mapOrder)
+			: [];
+
+	return data;
+}
+
+export async function getOrder(id: string | number): Promise<Order> {
+	const response = await apiFetch(`/orders/${id}`);
+	const payload = await parseJson(response);
+
+	if (payload && typeof payload === "object" && !Array.isArray(payload)) {
+		return mapOrder(payload as Record<string, unknown>);
+	}
+
+	throw new Error("Order not found");
+}
+
+export async function getMeta(): Promise<MetaSummary> {
+	const response = await apiFetch(`/meta`);
+	const payload = await parseJson(response);
+
+	const safeNumber = (value: unknown) => {
+		const numeric = Number(value);
+		return Number.isFinite(numeric) ? numeric : 0;
+	};
+
+	return {
+		products: safeNumber(payload.products),
+		bundles: safeNumber(payload.bundles),
+		orders: safeNumber(payload.orders),
+		leads: safeNumber(payload.leads),
+		discounts: safeNumber(payload.discounts),
+		revenue: safeNumber(payload.revenue),
+	};
 }
 
 export async function updateBundle(
