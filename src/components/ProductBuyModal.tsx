@@ -42,13 +42,11 @@ export function ProductBuyModal({ product, opened, close }: ProductBuyModalProps
 
       notifications.show({
         title: "Success",
-        message: "Order placed successfully!",
+        message: "Order placed successfully! We'll contact you soon.",
         color: "green",
       });
       close();
-      form.reset();
-      // Refresh page to show new stock
-      window.location.reload(); 
+      form.reset(); 
     } catch (error) {
       notifications.show({
         title: "Error",

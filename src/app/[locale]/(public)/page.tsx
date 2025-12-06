@@ -5,6 +5,7 @@ import { ShoppingBag } from 'lucide-react';
 import ProductModal from '@/components/ProductModal';
 import Link from 'next/link';
 import { getProducts, Product } from '@/lib/api';
+import { FeaturedBundle } from '@/components/landing/FeaturedBundle';
 
 // Constants for color consistency
 const RED_COLOR = '#D92323';
@@ -205,6 +206,9 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Featured Bundles Section */}
+      <FeaturedBundle />
 
       <section className="py-20 px-6 bg-gradient-to-b from-white to-gray-50">
         <div className="max-w-7xl mx-auto">

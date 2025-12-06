@@ -3,129 +3,136 @@
 
 import { Button } from "@mantine/core";
 import Image from "next/image";
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getBundles, type Bundle } from "@/lib/api";
 
-const PLACEHOLDER_IMAGE =
-  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='800' viewBox='0 0 600 800'%3E%3Crect width='600' height='800' fill='%23e5e7eb'/%3E%3Ctext x='50%25' y='50%25' fill='%236b7280' font-size='36' text-anchor='middle' font-family='system-ui' dy='.35em'%3ENo Image%3C/text%3E%3C/svg%3E";
-
-function sanitizeImageUrl(value: string | null | undefined): string {
-  if (!value) return PLACEHOLDER_IMAGE;
-  if (/placehold\.co/i.test(value)) {
-    return PLACEHOLDER_IMAGE;
-  }
-  return value;
-}
-
 export function FeaturedBundle() {
-  const [featuredBundle, setFeaturedBundle] = useState<Bundle | null>(null);
+  const [bundles, setBundles] = useState<Bundle[]>([]);
 
   useEffect(() => {
     async function fetchBundles() {
       try {
-        const response = await getBundles({ perPage: 1, status: "published" });
-        setFeaturedBundle(response.data[0] ?? null);
+        const response = await getBundles({ perPage: 10, status: "published" });
+        setBundles(response.data);
       } catch (error) {
-        console.error("Failed to load featured bundle", error);
-        setFeaturedBundle(null);
+        console.error("Failed to load bundles", error);
+        setBundles([]);
       }
     }
 
     void fetchBundles();
   }, []);
 
-  if (!featuredBundle) {
+  if (bundles.length === 0) {
     return null;
   }
 
-  const products = Array.isArray(featuredBundle.products)
-    ? featuredBundle.products.filter((product) => Boolean(product.coverImage))
-    : [];
-
-  const primaryProduct = products[0] ?? null;
-  const fallbackImage = sanitizeImageUrl(
-    featuredBundle.coverImage || featuredBundle.bundleImage,
-  );
-
-  const galleryItems = (products.length > 0
-    ? products.map((product) => ({
-        id: String(product.id),
-        image: sanitizeImageUrl(product.coverImage) || fallbackImage,
-        label: product.name ?? featuredBundle.title ?? "Featured bundle",
-      }))
-    : [
-        {
-          id: String(featuredBundle.id),
-          image: fallbackImage,
-          label: featuredBundle.title ?? "Featured bundle",
-        },
-      ]) satisfies Array<{ id: string; image: string; label: string }>;
-
   return (
-    <section className="mb-12 rounded-xl bg-pink-50 p-6 md:p-8">
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 md:items-center">
-        <div>
-          <h3 className="text-2xl font-bold tracking-tight">
-            Starter Gift Box
-          </h3>
-          <p className="mt-2 text-lg font-semibold mb-3 animate-shimmer">
-            Expandable baby clothes rooted in Ethiopian culture - made for
-            growth
-          </p>
-          <p className="mt-2 text-gray-600">
-            Get everything you need for your newborn with our curated starter
-            kit. Save 15% when you buy the giftbox!
-          </p>
-          <div className="mt-4 flex items-center gap-4">
-            <p className="text-2xl font-bold text-[#d6001c]">ETB 85</p>
-            <p className="text-lg text-gray-500 line-through">ETB 100</p>
+    <section className="py-16 px-6 bg-gradient-to-b from-pink-50 to-white">
+      <div className="max-w-7xl mx-auto">
+        <h2 className="text-4xl md:text-5xl font-black text-center mb-2 text-gray-900">
+          Curated{" "}
+          <span className="text-[#D92323]">Bundles</span>
+        </h2>
+        <p className="text-center text-gray-600 mb-10 max-w-2xl mx-auto text-sm md:text-base">
+          Save more with our specially curated bundles - everything you need in one package!
+        </p>
+
+        {/* Horizontal scrollable container */}
+        <div className="relative">
+          <div className="flex gap-6 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide">
+            {bundles.map((bundle) => {
+              const productCount = bundle.products?.length ?? 0;
+              const totalValue = bundle.products?.reduce((sum, p) => sum + p.price, 0) ?? 0;
+              const originalValue = Math.round(totalValue * 1.15);
+
+              return (
+                <div
+                  key={bundle.id}
+                  className="flex-none w-80 sm:w-96 snap-center"
+                >
+                  <div className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02] h-full">
+                    {/* Bundle Image */}
+                    <div className="relative h-80 bg-gray-50">
+                      <Image
+                        src={bundle.coverImage || bundle.bundleImage}
+                        alt={bundle.title}
+                        fill
+                        className="object-cover"
+                      />
+                      {productCount > 0 && (
+                        <div className="absolute top-4 right-4 bg-pink-500 text-white px-3 py-1.5 rounded-full text-sm font-bold shadow-lg">
+                          {productCount} Items
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Bundle Info */}
+                    <div className="p-6">
+                      <h3 className="text-2xl font-bold tracking-tight mb-2 line-clamp-2">
+                        {bundle.title}
+                      </h3>
+                      <p className="text-base text-pink-600 font-medium mb-4 line-clamp-2">
+                        {bundle.description}
+                      </p>
+
+                      {/* Pricing */}
+                      <div className="flex items-center gap-3 mb-5">
+                        <p className="text-3xl font-black text-[#D92323]">
+                          ETB {totalValue.toFixed(0)}
+                        </p>
+                        {originalValue > totalValue && (
+                          <p className="text-lg text-gray-400 line-through">
+                            ETB {originalValue}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Buttons */}
+                      <div className="flex flex-col gap-2.5">
+                        <Button
+                          size="md"
+                          fullWidth
+                          className="bg-[#D92323] hover:bg-red-700 text-white font-semibold"
+                          radius="xl"
+                        >
+                          View Bundle
+                        </Button>
+                        <Button
+                          size="md"
+                          fullWidth
+                          variant="outline"
+                          className="border-2 border-[#D92323] text-[#D92323] hover:bg-[#D92323]/5 font-semibold"
+                          radius="xl"
+                        >
+                          Customize
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-          <div className="mt-6 flex flex-col gap-4 sm:flex-row">
-            <Button
-              component={Link}
-              size="md"
-              radius="lg"
-              href={
-                primaryProduct
-                  ? `/en/product/${primaryProduct.id}`
-                  : `/en/bundle/${featuredBundle.id}`
-              }
-            >
-              View Giftbox
-            </Button>
-            <Button
-              size="md"
-              variant="outline"
-              className="border-[#d6001c]/50 text-[#d6001c] hover:bg-[#d6001c]/10"
-              radius="lg"
-            >
-              Customize
-            </Button>
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          {galleryItems.map((item) => (
-            <div
-              key={item.id}
-              className="group relative aspect-square overflow-hidden rounded-lg"
-            >
-              <div className="relative h-full w-full">
-                <Image
-                  src={item.image || fallbackImage}
-                  alt={item.label}
-                  fill
-                  className="object-cover transition-transform duration-300 group-hover:scale-105"
-                />
-              </div>
-              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-              <p className="absolute bottom-2 left-2 text-xs font-medium text-white">
-                {item.label}
-              </p>
+          
+          {/* Scroll hint for mobile */}
+          {bundles.length > 1 && (
+            <div className="text-center mt-4 text-sm text-gray-500 md:hidden">
+              ← Swipe to see more →
             </div>
-          ))}
+          )}
         </div>
       </div>
+
+      <style jsx>{`
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+        .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+      `}</style>
     </section>
   );
 }

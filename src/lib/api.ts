@@ -89,6 +89,14 @@ export interface Order {
 	notes?: string | null;
 	createdAt: string | null;
 	updatedAt?: string | null;
+	items?: {
+		id?: number;
+		productId: number;
+		productName?: string;
+		quantity: number;
+		price: number;
+		priceCents?: number;
+	}[];
 }
 
 export interface OrderQuery {
@@ -242,6 +250,24 @@ function mapBundle(input: Record<string, unknown>): Bundle {
 
 function mapOrder(input: Record<string, unknown>): Order {
 	const totalCents = Number(input.totalCents ?? 0);
+	const items = Array.isArray((input as Record<string, unknown>).items)
+		? ((input as { items: Record<string, unknown>[] }).items || []).map((item) => {
+			const price = Number(item.price ?? 0);
+			const priceCents = Number.isFinite(Number(item.priceCents))
+				? Number(item.priceCents)
+				: Math.round(price * 100);
+
+			return {
+				id: Number(item.id ?? 0) || undefined,
+				productId: Number(item.productId ?? 0),
+				productName: typeof item.productName === "string" ? item.productName : undefined,
+				quantity: Number(item.quantity ?? 0),
+				price: Number.isFinite(price) ? price : 0,
+				priceCents: Number.isFinite(priceCents) ? priceCents : 0,
+			};
+		})
+		: undefined;
+
 	return {
 		id: Number(input.id ?? 0),
 		orderNumber: typeof input.orderNumber === "string" ? input.orderNumber : "",
@@ -253,6 +279,7 @@ function mapOrder(input: Record<string, unknown>): Order {
 		notes: typeof input.notes === "string" ? input.notes : null,
 		createdAt: typeof input.createdAt === "string" ? input.createdAt : null,
 		updatedAt: typeof input.updatedAt === "string" ? input.updatedAt : null,
+		items,
 	};
 }
 
@@ -466,13 +493,14 @@ export interface CreateOrderPayload {
 }
 
 export async function createOrder(payload: CreateOrderPayload) {
-  return apiFetch("/orders", {
+  const response = await apiFetch("/orders", {
     method: "POST",
     body: JSON.stringify(payload),
     headers: {
       "Content-Type": "application/json",
     },
   });
+  return parseJson(response);
 }
 
 export async function getOrders(params: OrderQuery = {}): Promise<Order[]> {
@@ -498,6 +526,23 @@ export async function getOrder(id: string | number): Promise<Order> {
 	}
 
 	throw new Error("Order not found");
+}
+
+export async function updateOrderStatus(orderId: string | number, status: string): Promise<Order> {
+	const response = await apiFetch(`/orders/${orderId}/status`, {
+		method: "PATCH",
+		headers: {
+			"Content-Type": "application/json",
+		},
+		body: JSON.stringify({ status }),
+	});
+	const payload = await parseJson(response);
+
+	if (payload && typeof payload === "object" && !Array.isArray(payload)) {
+		return mapOrder(payload as Record<string, unknown>);
+	}
+
+	throw new Error("Failed to update order status");
 }
 
 export async function getMeta(): Promise<MetaSummary> {
